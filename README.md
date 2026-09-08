@@ -19,7 +19,9 @@ For a stable everyday location, quit the app and install it:
 ./scripts/install.sh
 ```
 
-This installs to `~/Applications/Not Fancy Zones.app`. The app uses the same blue icon in the menu bar and settings sidebar, and has no Dock icon. Use its menu to open Settings, preview zones, restore windows, pause, or quit. Enable **Launch at login** in Settings if desired.
+This installs to `~/Applications/Not Fancy Zones.app`. The app uses the same blue icon in the menu bar and settings sidebar, and has no Dock icon. Use its menu to open Settings, preview zones, restore windows, pause, or quit. Enable **Launch at login** in Settings if desired. If macOS requires approval, finish enabling it in System Settings → General → Login Items & Extensions.
+
+If Launch at login reports **Invalid argument (22)**, quit and reopen the `.app` through Finder or the `open` command above. Launching `Contents/MacOS/NotFancyZones` directly from a terminal/test harness can cause this error. Use the installed copy for everyday use.
 
 Allow **Not Fancy Zones** in **System Settings → Privacy & Security → Accessibility**, then click **Check again** in the app (or reopen its menu). macOS requires this permission for moving/resizing other applications and observing Shift-drag events. The app does not request Screen Recording or Automation permission. It cannot grant its own permission.
 

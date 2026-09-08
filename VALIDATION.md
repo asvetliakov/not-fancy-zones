@@ -2,6 +2,12 @@
 
 Validated locally on **2026-09-09**, macOS 26.6.2, Apple Silicon, Swift 6.3.3, using only Xcode Command Line Tools. App version: 0.1.0. The original functional/performance build was approximately **1 MiB** on disk; the bundle with the added multi-resolution application icon is approximately **2.7 MiB**.
 
+## Launch-at-login follow-up
+
+The user reported `Invalid argument` after the performance review. The remaining app instance had been started by directly executing `Contents/MacOS/NotFancyZones`. Unified logs confirmed that both registration and the subsequent redundant unregistration returned error 22. Restarting the **same unchanged bundle** through Launch Services (`open ...app`) allowed the Launch at login toggle to become enabled successfully. This isolates the observed registration failure to launch context rather than requiring a new signing certificate. Actual login/logout launch remains untested.
+
+The UI also had an independent feedback bug: resetting the toggle after a failed registration triggered its `onChange` handler and attempted unregistration. Replaced that with a user-action binding, preserved the original error domain/code, skipped redundant registration/unregistration, and added pending-approval feedback plus event-driven status refresh when the app becomes active. No polling was added. The Swift release compilation and 20 core tests passed. The active bundle was kept unchanged for the successful login registration; these UI improvements are compiled in the build output and will be packaged on the next release build.
+
 ## Final review before publication
 
 Reviewed the full Swift sources, native event/AX lifecycle, persistence, and packaging scripts. Fixed these issues before committing:

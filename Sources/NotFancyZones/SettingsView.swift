@@ -15,7 +15,8 @@ struct SettingsView: View {
     @State private var draft = ZonesCore.GridLayout()
     @State private var selection = Set<String>()
     @State private var error: String?
-    @State private var loginEnabled = SMAppService.mainApp.status == .enabled
+    @State private var loginStatus = SMAppService.mainApp.status
+    @State private var loginError: String?
     @State private var showForgetConfirmation = false
 
     private var connected: DisplayInfo? { state.displays.first { $0.id == displayID } }
@@ -61,6 +62,9 @@ struct SettingsView: View {
         .frame(minWidth: 900, minHeight: 720)
         .background(Color(nsColor: .windowBackgroundColor))
         .onAppear { if displayID.isEmpty { load(state.displays.first?.id ?? state.preferences.displays.first?.id ?? "") } }
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
+            loginStatus = SMAppService.mainApp.status
+        }
         .alert("Forget all remembered windows?", isPresented: $showForgetConfirmation) {
             Button("Cancel", role: .cancel) {}
             Button("Forget windows", role: .destructive) { coordinator.forgetAll() }
@@ -222,11 +226,19 @@ struct SettingsView: View {
                 get: { state.preferences.restoreWindows },
                 set: { state.preferences.restoreWindows = $0; state.save(); coordinator.restorationChanged() }
             )).font(.callout)
-            Toggle("Launch at login", isOn: $loginEnabled).font(.callout).onChange(of: loginEnabled) { _, enabled in
-                do {
-                    if enabled { try SMAppService.mainApp.register() } else { try SMAppService.mainApp.unregister() }
-                    if SMAppService.mainApp.status == .requiresApproval { SMAppService.openSystemSettingsLoginItems() }
-                } catch { self.error = "Login item: \(error.localizedDescription)"; loginEnabled = SMAppService.mainApp.status == .enabled }
+            Toggle("Launch at login", isOn: Binding(
+                get: { loginStatus == .enabled || loginStatus == .requiresApproval },
+                set: setLaunchAtLogin
+            )).font(.callout).accessibilityIdentifier("launchAtLogin")
+            if loginStatus == .requiresApproval {
+                Text("Allow Not Fancy Zones in System Settings → General → Login Items & Extensions to finish enabling it.")
+                    .font(.caption).foregroundStyle(.secondary)
+                Button("Open Login Items Settings") { SMAppService.openSystemSettingsLoginItems() }
+            }
+            if let loginError {
+                Text(loginError).font(.caption).foregroundStyle(.red).textSelection(.enabled)
+                    .accessibilityIdentifier("loginItemError")
+                Button("Restart app", action: restartApp).disabled(state.restarting)
             }
             HStack {
                 Text("\(state.preferences.placements.count) remembered windows").font(.caption).foregroundStyle(.secondary)
@@ -237,6 +249,28 @@ struct SettingsView: View {
             Text(state.status).font(.caption).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
             Text("Uses the space macOS makes available, including when the Dock or menu bar auto-hides. Manually moving or resizing a window releases its assignment.")
                 .font(.caption2).foregroundStyle(.tertiary).fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    private func setLaunchAtLogin(_ enabled: Bool) {
+        let service = SMAppService.mainApp
+        loginError = nil
+        // Refreshing UI state must never register/unregister again. In particular,
+        // reverting an unsuccessful enable must not try to unregister a missing item.
+        defer { loginStatus = service.status }
+        do {
+            if enabled {
+                if service.status == .requiresApproval {
+                    SMAppService.openSystemSettingsLoginItems(); return
+                }
+                if service.status != .enabled { try service.register() }
+                if service.status == .requiresApproval { SMAppService.openSystemSettingsLoginItems() }
+            } else if service.status == .enabled || service.status == .requiresApproval {
+                try service.unregister()
+            }
+        } catch {
+            let failure = error as NSError
+            loginError = "Launch at login: \(failure.localizedDescription) (\(failure.domain), \(failure.code)). Quit and reopen the .app from Finder, then try again."
         }
     }
 

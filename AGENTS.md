@@ -13,6 +13,8 @@ This is a native macOS 14+ menu bar utility, written in Swift/AppKit with a Swif
 - `./scripts/e2e.sh` — real Accessibility and Shift-drag checks using disposable fixture windows. Requires user-enabled Accessibility for the built app; briefly takes over the mouse. Uses isolated settings under `test-results/`. Set `NFZ_FIXTURE_NO_HIT_TEST=1` for the Telegram-style hit-test regression.
 - `./scripts/measure-idle.py PID --seconds 30` — cumulative CPU-time delta and RSS. Close settings and leave the desktop idle during measurement.
 
+Launch the everyday app through Finder or `open "dist/Not Fancy Zones.app"`, not by executing `Contents/MacOS/NotFancyZones` directly. Direct launches are useful for isolated diagnostics, but can make `SMAppService.mainApp.register()` fail with error 22. After such testing, stop the diagnostic instance and reopen through Launch Services before handing the app back to the user.
+
 Read `README.md` for permissions, testing limitations, and macOS-specific behavior. Record real validation results in `VALIDATION.md`; distinguish automated, simulated, measured, and untested behavior. Never claim a hardware disconnect test based only on a simulated topology test.
 
 ## Architecture
