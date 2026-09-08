@@ -1,0 +1,14 @@
+.build/
+dist/
+.DS_Store
+*.xcodeproj/
+test-results/
+__pycache__/
+*.pyc
+.signing-identity
+
+# Local signing material and environment secrets
+*.p12
+*.pfx
+.env
+.env.*
